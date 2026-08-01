@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   getInventory,
   addInventory,
@@ -9,6 +9,7 @@ import InventoryTable from "../../components/Inventory/InventoryTable";
 import InventoryForm from "../../components/Inventory/InventoryForm";
 import InventorySearch from "../../components/Inventory/InventorySearch";
 import CSVUpload from "../../components/Inventory/CSVUpload";
+import DashboardLayout from "../../layouts/DashboardLayout";
 
 const emptyForm = {
   product_name: "",
@@ -26,14 +27,10 @@ function Inventory() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState(emptyForm);
 
-  useEffect(() => {
-    loadInventory();
-  }, []);
-
   // ===============================
   // Load Inventory
   // ===============================
-  const loadInventory = async () => {
+  const loadInventory = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -53,7 +50,13 @@ function Inventory() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    // This effect initiates the one-time inventory fetch on page entry.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadInventory();
+  }, [loadInventory]);
 
   const refreshInventory = async () => {
     await loadInventory();
@@ -142,7 +145,8 @@ function Inventory() {
   // UI
   // ===============================
   return (
-    <div className="p-8">
+    <DashboardLayout title="Inventory" role="Food Business">
+    <div>
       <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold">
           Inventory Management
@@ -189,6 +193,7 @@ function Inventory() {
         onClose={closeForm}
       />
     </div>
+    </DashboardLayout>
   );
 }
 

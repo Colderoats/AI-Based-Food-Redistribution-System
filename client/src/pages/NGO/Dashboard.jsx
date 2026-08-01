@@ -1,48 +1,11 @@
+import { useState } from "react";
+import { BrainCircuit, Building2, Truck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "../../layouts/DashboardLayout";
+import LogisticsPanel from "../../components/LogisticsPanel";
 
 function Dashboard() {
-  return (
-    <DashboardLayout
-      title="NGO Dashboard"
-      role="Food Recipient Organization"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-
-        <div className="bg-slate-900 p-6 rounded-xl">
-          <h3 className="text-gray-400">Available Donations</h3>
-          <p className="text-3xl font-bold mt-3">37</p>
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-xl">
-          <h3 className="text-gray-400">Requested Donations</h3>
-          <p className="text-3xl font-bold mt-3">15</p>
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-xl">
-          <h3 className="text-gray-400">Completed Pickups</h3>
-          <p className="text-3xl font-bold mt-3">28</p>
-        </div>
-
-        <div className="bg-slate-900 p-6 rounded-xl">
-          <h3 className="text-gray-400">Meals Served</h3>
-          <p className="text-3xl font-bold mt-3">8,420</p>
-        </div>
-
-      </div>
-
-      <div className="mt-8 bg-slate-900 rounded-xl p-6">
-        <h2 className="text-2xl font-semibold mb-4">
-          NGO Overview
-        </h2>
-
-        <p className="text-gray-400">
-          Donation requests, pickup schedules, received food, and community
-          impact analytics will be displayed here.
-        </p>
-      </div>
-
-    </DashboardLayout>
-  );
+  const navigate = useNavigate(); const [showLogistics, setShowLogistics] = useState(false);
+  return <DashboardLayout title="Dashboard" role="Food Recipient Organization"><div className="grid gap-5 md:grid-cols-3"><button onClick={() => navigate("/ngo/partners")} className="rounded-lg border border-slate-800 bg-slate-900 p-5 text-left hover:border-emerald-500/60"><Building2 className="text-emerald-400" size={22} /><p className="mt-6 text-sm text-slate-400">Food businesses</p><p className="mt-1 text-3xl font-bold">Find</p><p className="mt-3 text-xs text-emerald-300">Filter nearby available food</p></button><div className="rounded-lg border border-slate-800 bg-slate-900 p-5"><Truck className="text-emerald-400" size={22} /><p className="mt-6 text-sm text-slate-400">Requested donations</p><p className="mt-1 text-3xl font-bold">--</p></div><button onClick={() => setShowLogistics(true)} className="rounded-lg border border-slate-800 bg-slate-900 p-5 text-left hover:border-emerald-500/60"><Truck className="text-emerald-400" size={22} /><p className="mt-6 text-sm text-slate-400">Pending pickups</p><p className="mt-1 text-3xl font-bold">--</p><p className="mt-3 text-xs text-emerald-300">Open logistics availability</p></button></div><div className="mt-7 grid gap-6 xl:grid-cols-2"><section className="rounded-lg border border-slate-800 bg-slate-900 p-6"><h2 className="font-semibold">Donation activity</h2><p className="mt-4 text-sm text-slate-400">Requests and pickup updates will appear here as partner data is connected.</p></section><section className="rounded-lg border border-cyan-500/20 bg-slate-900 p-6"><div className="flex items-center gap-2"><BrainCircuit className="text-cyan-300" size={21} /><h2 className="font-semibold">AI prediction</h2></div><p className="mt-4 text-sm leading-6 text-slate-400">Reserved for demand forecasts, food suitability, and pickup recommendations once the AI model is available.</p><div className="mt-5 h-16 rounded border border-dashed border-slate-700" /></section></div>{showLogistics && <LogisticsPanel onClose={() => setShowLogistics(false)} />}</DashboardLayout>;
 }
-
 export default Dashboard;

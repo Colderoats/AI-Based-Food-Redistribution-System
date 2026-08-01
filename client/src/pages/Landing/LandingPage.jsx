@@ -15,11 +15,8 @@ function LandingPage() {
 
     switch (role) {
       case "business":
-        navigate("/business/login");
-        break;
-
       case "ngo":
-        navigate("/ngo/login");
+        navigate(`/auth?mode=register&role=${role}`);
         break;
 
       case "admin":

@@ -16,18 +16,18 @@ export const getBusinessAnalytics = async (req, res) => {
     );
 
     const surplus = await pool.query(
-      `SELECT COUNT(*) FROM SURPLUS
-       WHERE business_id = $1`,
+      `SELECT COUNT(*) FROM surplus_food s
+       JOIN inventory i ON i.inventory_id=s.inventory_id
+       JOIN product p ON p.product_id=i.product_id
+       WHERE p.business_id = $1`,
       [business_id]
     );
 
     const donated = await pool.query(
       `SELECT COUNT(*)
-       FROM DONATED d
-       JOIN SURPLUS s
-       ON d.surplus_id = s.surplus_id
-       WHERE s.business_id = $1
-       AND d.status = 'Completed'`,
+       FROM donation d
+       WHERE d.business_id = $1
+       AND d.donation_status = 'Completed'`,
       [business_id]
     );
 
@@ -64,24 +64,24 @@ export const getNGOAnalytics = async (req, res) => {
 
     const requests = await pool.query(
       `SELECT COUNT(*)
-       FROM DONATED
+       FROM ngo_request
        WHERE ngo_id = $1`,
       [ngo_id]
     );
 
     const approved = await pool.query(
       `SELECT COUNT(*)
-       FROM DONATED
+       FROM ngo_request
        WHERE ngo_id = $1
-       AND status='Approved'`,
+       AND request_status='Approved'`,
       [ngo_id]
     );
 
     const completed = await pool.query(
       `SELECT COUNT(*)
-       FROM DONATED
+       FROM donation
        WHERE ngo_id = $1
-       AND status='Completed'`,
+       AND donation_status='Completed'`,
       [ngo_id]
     );
 
@@ -127,17 +127,17 @@ export const getAdminAnalytics = async (req, res) => {
     );
 
     const surplus = await pool.query(
-      "SELECT COUNT(*) FROM SURPLUS"
+      "SELECT COUNT(*) FROM surplus_food"
     );
 
     const donations = await pool.query(
-      "SELECT COUNT(*) FROM DONATED"
+      "SELECT COUNT(*) FROM donation"
     );
 
     const completed = await pool.query(
       `SELECT COUNT(*)
-       FROM DONATED
-       WHERE status='Completed'`
+       FROM donation
+       WHERE donation_status='Completed'`
     );
 
     res.status(200).json({

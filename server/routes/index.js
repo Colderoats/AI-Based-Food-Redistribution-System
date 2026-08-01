@@ -7,6 +7,9 @@ import donationRoutes from "./donationRoutes.js";
 import inventoryRoutes from "./inventoryRoutes.js";
 import ngoRoutes from "./ngoRoutes.js";
 import surplusRoutes from "./surplusRoutes.js";
+import logisticsRoutes from "./logisticsRoutes.js";
+import matchRoutes from "./matchRoutes.js";
+import authRoutes from "./authRoutes.js";
 
 const router = express.Router();
 
@@ -17,5 +20,8 @@ router.use("/donations", donationRoutes);
 router.use("/inventory", inventoryRoutes);
 router.use("/ngo", ngoRoutes);
 router.use("/surplus", surplusRoutes);
+router.use("/logistics", logisticsRoutes);
+router.use("/matches", matchRoutes);
+router.use("/auth", authRoutes);
 
 export default router;

@@ -146,6 +146,9 @@ export const getBusinessProfile = async (req, res) => {
         email,
         phone,
         address,
+        latitude,
+        longitude,
+        service_radius_km,
         created_at
        FROM FOOD_BUSINESS
        WHERE business_id=$1`,
@@ -178,6 +181,9 @@ export const updateBusinessProfile = async (req, res) => {
       business_type,
       phone,
       address,
+      latitude,
+      longitude,
+      service_radius_km,
     } = req.body;
 
     const result = await pool.query(
@@ -186,20 +192,29 @@ export const updateBusinessProfile = async (req, res) => {
        business_name=$1,
        business_type=$2,
        phone=$3,
-       address=$4
-       WHERE business_id=$5
+       address=$4,
+       latitude=$5,
+       longitude=$6,
+       service_radius_km=$7
+       WHERE business_id=$8
        RETURNING
        business_id,
        business_name,
        business_type,
        email,
        phone,
-       address`,
+       address,
+       latitude,
+       longitude,
+       service_radius_km`,
       [
         business_name,
         business_type,
         phone,
         address,
+        latitude || null,
+        longitude || null,
+        service_radius_km || 20,
         req.user.id,
       ]
     );

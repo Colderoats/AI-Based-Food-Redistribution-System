@@ -142,6 +142,9 @@ export const getNGOProfile = async (req, res) => {
         email,
         phone,
         address,
+        latitude,
+        longitude,
+        service_radius_km,
         created_at
        FROM NGO
        WHERE ngo_id = $1`,
@@ -174,6 +177,9 @@ export const updateNGOProfile = async (req, res) => {
       registration_number,
       phone,
       address,
+      latitude,
+      longitude,
+      service_radius_km,
     } = req.body;
 
     const result = await pool.query(
@@ -182,20 +188,29 @@ export const updateNGOProfile = async (req, res) => {
        ngo_name = $1,
        registration_number = $2,
        phone = $3,
-       address = $4
-       WHERE ngo_id = $5
+       address = $4,
+       latitude = $5,
+       longitude = $6,
+       service_radius_km = $7
+       WHERE ngo_id = $8
        RETURNING
        ngo_id,
        ngo_name,
        registration_number,
        email,
        phone,
-       address`,
+       address,
+       latitude,
+       longitude,
+       service_radius_km`,
       [
         ngo_name,
         registration_number,
         phone,
         address,
+        latitude || null,
+        longitude || null,
+        service_radius_km || 20,
         req.user.id,
       ]
     );
