@@ -8,18 +8,19 @@ import {
 } from "../controllers/donationController.js";
 
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { roleMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
 // Donation Workflow
-router.post("/request", authMiddleware, requestDonation);
+router.post("/request", authMiddleware, roleMiddleware("ngo"), requestDonation);
 
-router.put("/approve/:id", authMiddleware, approveDonation);
+router.put("/approve/:id", authMiddleware, roleMiddleware("business"), approveDonation);
 
-router.put("/reject/:id", authMiddleware, rejectDonation);
+router.put("/reject/:id", authMiddleware, roleMiddleware("business"), rejectDonation);
 
-router.put("/complete/:id", authMiddleware, completeDonation);
+router.put("/complete/:id", authMiddleware, roleMiddleware("business", "ngo"), completeDonation);
 
-router.get("/", authMiddleware, getDonations);
+router.get("/", authMiddleware, roleMiddleware("business", "ngo"), getDonations);
 
 export default router;

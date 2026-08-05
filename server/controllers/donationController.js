@@ -24,7 +24,21 @@ export const rejectDonation = async (req, res) => {
   try { const result = await pool.query(`UPDATE ngo_request r SET request_status='Rejected' FROM surplus_food s JOIN inventory i ON i.inventory_id=s.inventory_id JOIN product p ON p.product_id=i.product_id WHERE r.surplus_id=s.surplus_id AND p.business_id=$1 AND r.request_id=$2 AND r.request_status='Pending' RETURNING r.*`, [req.user.id, req.params.id]); if (!result.rows.length) return res.status(404).json({ success: false, message: "Pending request not found." }); res.json({ success: true, request: result.rows[0] }); } catch (error) { console.error(error); res.status(500).json({ success: false, message: "Unable to reject request." }); }
 };
 
-export const completeDonation = async (req, res) => { try { const result = await pool.query(`UPDATE donation SET donation_status='Completed' WHERE donation_id=$1 AND (business_id=$2 OR ngo_id=$2) RETURNING *`, [req.params.id, req.user.id]); if (!result.rows.length) return res.status(404).json({ success: false, message: "Donation not found." }); res.json({ success: true, donation: result.rows[0] }); } catch (error) { console.error(error); res.status(500).json({ success: false, message: "Unable to complete donation." }); } };
+export const completeDonation = async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const donation = await client.query(`SELECT d.*, s.surplus_id, s.inventory_id, s.quantity_available FROM donation d JOIN ngo_request r ON r.request_id=d.request_id JOIN surplus_food s ON s.surplus_id=r.surplus_id WHERE d.donation_id=$1 AND (d.business_id=$2 OR d.ngo_id=$2) FOR UPDATE`, [req.params.id, req.user.id]);
+    if (!donation.rows.length) { await client.query("ROLLBACK"); return res.status(404).json({ success: false, message: "Donation not found." }); }
+    if (donation.rows[0].donation_status === "Completed") { await client.query("ROLLBACK"); return res.status(409).json({ success: false, message: "This donation is already completed." }); }
+    const stock = await client.query(`UPDATE inventory SET quantity=quantity-$1 WHERE inventory_id=$2 AND quantity >= $1 RETURNING quantity`, [donation.rows[0].quantity_available, donation.rows[0].inventory_id]);
+    if (!stock.rows.length) { await client.query("ROLLBACK"); return res.status(409).json({ success: false, message: "There is insufficient inventory to complete this donation." }); }
+    const result = await client.query(`UPDATE donation SET donation_status='Completed' WHERE donation_id=$1 RETURNING *`, [req.params.id]);
+    await client.query(`UPDATE surplus_food SET status='Completed' WHERE surplus_id=$1`, [donation.rows[0].surplus_id]);
+    await client.query("COMMIT");
+    res.json({ success: true, donation: result.rows[0] });
+  } catch (error) { await client.query("ROLLBACK"); console.error(error); res.status(500).json({ success: false, message: "Unable to complete donation." }); } finally { client.release(); }
+};
 
 export const getDonations = async (req, res) => {
   const isBusiness = req.user.role === "business";

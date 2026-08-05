@@ -1,41 +1,15 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+
+const parseCsv = (text) => text.trim().split(/\r?\n/).map((line) => line.match(/(?:"([^"]*(?:""[^"]*)*)"|([^,]*))(?:,|$)/g).map((cell) => cell.replace(/,$/, "").replace(/^"|"$/g, "").replace(/""/g, '"')));
+const key = (value) => value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+const encode = (value) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 
 function CSVUpload({ onUpload }) {
-  const fileInputRef = useRef(null);
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-
-    if (!file) return;
-
-    if (!file.name.toLowerCase().endsWith(".csv")) {
-      alert("Please select a CSV file.");
-      return;
-    }
-
-    onUpload(file);
-
-    e.target.value = "";
-  };
-
-  return (
-    <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv"
-        hidden
-        onChange={handleFileChange}
-      />
-
-      <button
-        onClick={() => fileInputRef.current.click()}
-        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 rounded-lg"
-      >
-        Upload CSV
-      </button>
-    </>
-  );
+  const inputRef = useRef(null); const [pending,setPending]=useState(null);
+  const choose = async (event) => { const file=event.target.files?.[0]; event.target.value=""; if(!file)return; if(!file.name.toLowerCase().endsWith(".csv"))return alert("Please select a CSV file."); const matrix=parseCsv(await file.text()); if(matrix.length<2)return alert("The CSV must include headers and at least one row."); const headers=matrix[0].map(key); const productId=headers.findIndex((item)=>["product_id","product_code","sku"].includes(item)); const productName=headers.findIndex((item)=>["product_name","product"].includes(item)); const rows=matrix.slice(1).filter((row)=>row.some((cell)=>cell.trim())).map((row,index)=>({row:index+2,values:row,product_id:productId>=0?row[productId]:"",product_name:productName>=0?row[productName]:""})); const missing=rows.filter((row)=>!row.product_id.trim()||!row.product_name.trim()); setPending({file,headers,rows,productId,productName,missing}); };
+  const update = (rowNumber,field,value) => setPending((current)=>({...current,rows:current.rows.map((row)=>row.row===rowNumber?{...row,[field]:value}:row),missing:current.missing.map((row)=>row.row===rowNumber?{...row,[field]:value}:row)}));
+  const upload = () => { const headers=[...pending.headers]; let productId=pending.productId; if(productId<0){headers.unshift("product_id");productId=0;} if(pending.productName<0){headers.unshift("product_name"); if(pending.productId<0)productId=1;} const data=pending.rows.map((row)=>{const values=[...row.values]; if(pending.productName<0)values.unshift(row.product_name); else values[pending.productName]=row.product_name; if(pending.productId<0)values.splice(productId,0,row.product_id); else values[pending.productId]=row.product_id; return values;}); const text=[headers.map(encode).join(","),...data.map((row)=>row.map(encode).join(","))].join("\n"); onUpload(new File([text],pending.file.name,{type:"text/csv"}));setPending(null);};
+  const valid=pending && pending.rows.every((row)=>row.product_id.trim()&&row.product_name.trim());
+  return <><input ref={inputRef} type="file" accept=".csv" hidden onChange={choose}/><button onClick={()=>inputRef.current?.click()} className="rounded-lg bg-blue-600 px-5 py-3 text-white hover:bg-blue-700">Upload CSV</button>{pending&&<div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4"><div className="mx-auto my-10 max-w-3xl rounded-2xl bg-white p-6 text-slate-900"><h2 className="text-xl font-bold">Complete required CSV details</h2><p className="mt-1 text-sm text-slate-600">Product ID and Product Name are required for every row. Fill the highlighted records before importing.</p><div className="mt-5 max-h-[55vh] space-y-3 overflow-y-auto">{pending.missing.map((row)=><div key={row.row} className="grid gap-2 rounded-lg border p-3 md:grid-cols-[80px_1fr_1fr]"><span className="pt-2 text-sm font-semibold">Row {row.row}</span><input value={row.product_id} onChange={(e)=>update(row.row,"product_id",e.target.value)} placeholder="Product ID *" className="rounded border p-2"/><input value={row.product_name} onChange={(e)=>update(row.row,"product_name",e.target.value)} placeholder="Product Name *" className="rounded border p-2"/></div>)}</div><div className="mt-6 flex justify-end gap-3"><button onClick={()=>setPending(null)} className="rounded-lg border px-4 py-2">Cancel</button><button disabled={!valid} onClick={upload} className="rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white disabled:opacity-50">Import {pending.rows.length} row(s)</button></div></div></div>}</>;
 }
-
 export default CSVUpload;

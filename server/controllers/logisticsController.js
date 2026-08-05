@@ -6,6 +6,9 @@ export const createAvailability = async (req, res) => {
   if (!vehicle_type || !capacity_kg || !available_from || !available_until || !service_area) {
     return res.status(400).json({ success: false, message: "Vehicle, capacity, availability window, and service area are required." });
   }
+  if (!Number.isFinite(Number(capacity_kg)) || Number(capacity_kg) <= 0 || new Date(available_until) <= new Date(available_from)) {
+    return res.status(400).json({ success: false, message: "Capacity must be positive and the availability end must be after its start." });
+  }
 
   try {
     const result = await pool.query(

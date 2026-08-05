@@ -30,7 +30,8 @@ export const registerBusiness = async (req, res) => {
     }
 
     const existingBusiness = await pool.query(
-      "SELECT * FROM FOOD_BUSINESS WHERE email = $1",
+      `SELECT email FROM FOOD_BUSINESS WHERE LOWER(email) = LOWER($1)
+       UNION ALL SELECT email FROM NGO WHERE LOWER(email) = LOWER($1)`,
       [email]
     );
 
@@ -219,6 +220,7 @@ export const updateBusinessProfile = async (req, res) => {
       ]
     );
 
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: "Business not found." });
     res.status(200).json({
       success: true,
       message: "Profile updated successfully.",

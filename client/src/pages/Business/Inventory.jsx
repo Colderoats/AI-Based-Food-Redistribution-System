@@ -1,200 +1,25 @@
-import { useCallback, useEffect, useState } from "react";
-import {
-  getInventory,
-  addInventory,
-  uploadCSV,
-} from "../../services/inventoryService";
-
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { addInventory, deleteInventory, getExpiryAlerts, getInventory, removeExpiredInventory, updateInventory, uploadCSV } from "../../services/inventoryService";
 import InventoryTable from "../../components/Inventory/InventoryTable";
 import InventoryForm from "../../components/Inventory/InventoryForm";
-import InventorySearch from "../../components/Inventory/InventorySearch";
 import CSVUpload from "../../components/Inventory/CSVUpload";
 import DashboardLayout from "../../layouts/DashboardLayout";
 
-const emptyForm = {
-  product_name: "",
-  category: "",
-  unit_price: "",
-  quantity: "",
-  purchase_date: "",
-  expiry_date: "",
-};
+const empty = { product_code:"", product_name:"", category:"", quantity:"", unit:"units", purchase_date:"", expiry_date:"", supplier:"", batch_number:"", storage_type:"Cool dry", purchase_cost:"", selling_price:"", unit_price:"", barcode:"", notes:"" };
 
 function Inventory() {
-  const [inventory, setInventory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [formData, setFormData] = useState(emptyForm);
-
-  // ===============================
-  // Load Inventory
-  // ===============================
-  const loadInventory = useCallback(async () => {
-    try {
-      setLoading(true);
-
-      const response = await getInventory();
-
-      console.log("Inventory Response:", response);
-
-      if (response.success) {
-        setInventory(Array.isArray(response.inventory) ? response.inventory : []);
-      } else {
-        setInventory([]);
-      }
-    } catch (error) {
-      console.error("Load Inventory Error:", error);
-      alert("Failed to load inventory.");
-      setInventory([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    // This effect initiates the one-time inventory fetch on page entry.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadInventory();
-  }, [loadInventory]);
-
-  const refreshInventory = async () => {
-    await loadInventory();
-  };
-
-  // ===============================
-  // Form Controls
-  // ===============================
-  const openAddForm = () => {
-    setFormData(emptyForm);
-    setIsFormOpen(true);
-  };
-
-  const closeForm = () => {
-    setIsFormOpen(false);
-    setFormData(emptyForm);
-  };
-
-  // ===============================
-  // Add Inventory
-  // ===============================
-  const handleAddInventory = async () => {
-    try {
-      const response = await addInventory(formData);
-
-      if (response.success) {
-        alert("Inventory added successfully.");
-        closeForm();
-        await refreshInventory();
-      } else {
-        alert(response.message);
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Failed to add inventory.");
-    }
-  };
-
-  // ===============================
-  // Upload CSV
-  // ===============================
-  const handleCSVUpload = async (file) => {
-    try {
-      const formData = new FormData();
-
-      formData.append("file", file);
-
-      const response = await uploadCSV(formData);
-
-      console.log("CSV Upload Response:", response);
-
-      if (response.success) {
-        alert(response.message);
-
-        await refreshInventory();
-      } else {
-        alert(response.message);
-      }
-    } catch (error) {
-      console.error("CSV Upload Error:", error);
-      alert("CSV upload failed.");
-    }
-  };
-
-  // ===============================
-  // Filter Inventory
-  // ===============================
-  const filteredInventory = Array.isArray(inventory)
-    ? inventory.filter((item) => {
-        const search = searchTerm.toLowerCase();
-
-        const productName = String(item?.product_name ?? "").toLowerCase();
-        const category = String(item?.category ?? "").toLowerCase();
-
-        return (
-          productName.includes(search) ||
-          category.includes(search)
-        );
-      })
-    : [];
-
-  console.log("Inventory State:");
-  console.table(filteredInventory);
-
-  // ===============================
-  // UI
-  // ===============================
-  return (
-    <DashboardLayout title="Inventory" role="Food Business">
-    <div>
-      <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold">
-          Inventory Management
-        </h1>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <InventorySearch
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-          />
-
-          <CSVUpload
-            onUpload={handleCSVUpload}
-          />
-
-          <button
-            onClick={openAddForm}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-lg"
-          >
-            + Add Inventory
-          </button>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="text-center text-lg text-gray-600">
-          Loading inventory...
-        </div>
-      ) : filteredInventory.length === 0 ? (
-        <div className="text-center text-lg text-gray-500">
-          No inventory items found.
-        </div>
-      ) : (
-        <InventoryTable
-          inventory={filteredInventory}
-        />
-      )}
-
-      <InventoryForm
-        isOpen={isFormOpen}
-        formData={formData}
-        setFormData={setFormData}
-        onSubmit={handleAddInventory}
-        onClose={closeForm}
-      />
-    </div>
-    </DashboardLayout>
-  );
+  const [inventory,setInventory]=useState([]), [alerts,setAlerts]=useState([]), [loading,setLoading]=useState(true), [saving,setSaving]=useState(false);
+  const [query,setQuery]=useState(""), [category,setCategory]=useState(""), [status,setStatus]=useState(""), [sortBy,setSortBy]=useState("expiry_date"), [order,setOrder]=useState("asc");
+  const [form,setForm]=useState(empty), [editing,setEditing]=useState(null), [isFormOpen,setIsFormOpen]=useState(false), [notice,setNotice]=useState("");
+  const load=useCallback(async()=>{setLoading(true);try { const [items,expiry]=await Promise.all([getInventory({sort_by:sortBy,order}),getExpiryAlerts()]); setInventory(items.inventory||[]); setAlerts(expiry.alerts||[]); } catch { setNotice("Could not load inventory. Please try again."); } finally { setLoading(false); }},[sortBy,order]);
+  useEffect(()=>{const initial=setTimeout(load,0);const timer=setInterval(load,60000);return()=>{clearTimeout(initial);clearInterval(timer);};},[load]);
+  const filtered=useMemo(()=>inventory.filter((item)=>{const searchable=`${item.product_name} ${item.product_code||""} ${item.product_id||""} ${item.barcode||""}`.toLowerCase();return (!query||searchable.includes(query.toLowerCase()))&&(!category||item.category===category)&&(!status||item.expiry?.level===status);}),[inventory,query,category,status]);
+  const save=async()=>{setSaving(true);try{const result=editing?await updateInventory(editing.inventory_id,form):await addInventory(form);if(!result.success)throw new Error(result.message);setNotice(editing?"Inventory item updated.":"Inventory item added.");setEditing(null);setForm(empty);setIsFormOpen(false);await load();}catch(error){setNotice(error.response?.data?.message||error.message||"Could not save this item.");}finally{setSaving(false);}};
+  const edit=(item)=>{const values={...empty,...item,purchase_date:item.purchase_date?.slice(0,10),expiry_date:item.expiry_date?.slice(0,10)};delete values.expiry;setForm(values);setEditing(item);setIsFormOpen(true);};
+  const remove=async(id)=>{if(!window.confirm("Delete this inventory item?"))return;try{await deleteInventory(id);setNotice("Inventory item deleted.");load();}catch{setNotice("Could not delete item.");}};
+  const upload=async(file)=>{try{const data=new FormData();data.append("file",file);const result=await uploadCSV(data);setNotice(result.message);load();}catch(error){setNotice(error.response?.data?.message||"CSV upload failed.");}};
+  const purge=async()=>{if(!window.confirm("Remove all expired products from inventory?"))return;try{const result=await removeExpiredInventory();setNotice(result.message);load();}catch{setNotice("Could not remove expired products.");}};
+  const categories=[...new Set(inventory.map((item)=>item.category))];
+  return <DashboardLayout title="Inventory" role="Food Business"><div className="space-y-6"><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center"><div><h1 className="text-3xl font-bold">Inventory management</h1><p className="mt-1 text-slate-400">Track stock, categories, batches and expiry risk in one place.</p></div><div className="flex flex-wrap gap-2"><CSVUpload onUpload={upload}/><button onClick={purge} className="rounded-lg border border-red-500/50 px-4 py-2.5 text-red-300">Remove expired</button><button onClick={()=>{setEditing(null);setForm(empty);setIsFormOpen(true);}} className="rounded-lg bg-emerald-600 px-4 py-2.5 font-semibold text-white">+ Add inventory</button></div></div>{notice&&<div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-4 py-3 text-emerald-100">{notice}<button onClick={()=>setNotice("")} className="float-right">×</button></div>}<div className="grid gap-4 md:grid-cols-4">{[["Total products",inventory.length],["Near expiry",inventory.filter((item)=>item.expiry?.level==="near_expiry").length],["Expired",inventory.filter((item)=>item.expiry?.level==="expired").length],["Active alerts",alerts.length]].map(([label,value])=><div key={label} className="rounded-xl border border-slate-800 bg-slate-900 p-4"><p className="text-sm text-slate-400">{label}</p><p className="mt-1 text-3xl font-bold">{value}</p></div>)}</div><div className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900 p-4 md:grid-cols-5"><input value={query} onChange={(e)=>setQuery(e.target.value)} placeholder="Search name, Product ID or barcode" className="rounded-lg border border-slate-700 bg-slate-950 p-2.5 md:col-span-2"/><select value={category} onChange={(e)=>setCategory(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 p-2.5"><option value="">All categories</option>{categories.map((item)=><option key={item}>{item}</option>)}</select><select value={status} onChange={(e)=>setStatus(e.target.value)} className="rounded-lg border border-slate-700 bg-slate-950 p-2.5"><option value="">All expiry states</option><option value="safe">Safe</option><option value="near_expiry">Near Expiry</option><option value="today">Expiring Today</option><option value="expired">Expired</option></select><div className="flex gap-1"><select value={sortBy} onChange={(e)=>setSortBy(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 p-2.5"><option value="expiry_date">Expiry date</option><option value="uploaded_at">Upload date/time</option><option value="product_name">Product name</option><option value="product_id">Product ID</option></select><button onClick={()=>setOrder((value)=>value==="asc"?"desc":"asc")} className="rounded-lg border border-slate-700 px-3" title="Reverse sort">{order==="asc"?"↑":"↓"}</button></div></div>{loading?<p className="py-10 text-center text-slate-400">Loading inventory…</p>:filtered.length?<InventoryTable inventory={filtered} onEdit={edit} onDelete={remove}/>:<div className="rounded-xl border border-dashed border-slate-700 p-12 text-center text-slate-400">No inventory matches these filters. Add an item or upload a CSV to get started.</div>}<InventoryForm isOpen={isFormOpen} formData={form} setFormData={setForm} onSubmit={save} onClose={()=>{setEditing(null);setForm(empty);setIsFormOpen(false);}} saving={saving} title={editing?"Edit inventory item":"Add inventory item"}/></div></DashboardLayout>;
 }
-
 export default Inventory;

@@ -1,160 +1,21 @@
-function InventoryForm({
-  isOpen,
-  formData,
-  setFormData,
-  onSubmit,
-  onClose,
-}) {
+import BarcodeScanner from "./BarcodeScanner";
+
+const categories = ["Fruits","Vegetables","Dairy","Meat","Poultry","Seafood","Bakery","Beverages","Frozen Foods","Dry Goods","Ready-to-Eat","Snacks","Condiments","Grains","Spices","Other"];
+const fields = [
+  ["product_code","Product ID","text",true],["product_name","Product name","text",true],["category","Category","select",true],["quantity","Quantity","number",true],["unit","Unit","text",true],
+  ["purchase_date","Purchase date","date",true],["expiry_date","Expiry date","date",true],["supplier","Supplier","text"],["batch_number","Batch number","text"],
+  ["storage_type","Storage type","select"],["purchase_cost","Purchase cost","number"],["selling_price","Selling price (optional)","number"],["barcode","Barcode / QR value","text"],["notes","Notes","textarea"],
+];
+
+function InventoryForm({ isOpen, formData, setFormData, onSubmit, onClose, saving, title = "Add inventory" }) {
   if (!isOpen) return null;
-
-  const handleChange = (e) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-
-    if (
-      !formData.product_name ||
-      !formData.category ||
-      !formData.unit_price ||
-      !formData.quantity ||
-      !formData.purchase_date ||
-      !formData.expiry_date
-    ) {
-      alert("Please fill all fields.");
-      return;
-    }
-
-    onSubmit();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-
-      <div className="bg-white rounded-xl p-8 w-full max-w-2xl">
-
-        <h2 className="text-2xl font-bold mb-6">
-          Add Inventory
-        </h2>
-
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-2 gap-5"
-        >
-
-          <div>
-            <label className="font-medium">
-              Product Name
-            </label>
-
-            <input
-              type="text"
-              name="product_name"
-              value={formData.product_name}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">
-              Category
-            </label>
-
-            <input
-              type="text"
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">
-              Unit Price
-            </label>
-
-            <input
-              type="number"
-              name="unit_price"
-              value={formData.unit_price}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">
-              Quantity
-            </label>
-
-            <input
-              type="number"
-              name="quantity"
-              value={formData.quantity}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">
-              Purchase Date
-            </label>
-
-            <input
-              type="date"
-              name="purchase_date"
-              value={formData.purchase_date}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">
-              Expiry Date
-            </label>
-
-            <input
-              type="date"
-              name="expiry_date"
-              value={formData.expiry_date}
-              onChange={handleChange}
-              className="w-full border rounded-lg p-3 mt-2"
-            />
-          </div>
-
-          <div className="col-span-2 flex justify-end gap-4 mt-5">
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="bg-gray-300 hover:bg-gray-400 px-6 py-3 rounded-lg"
-            >
-              Cancel
-            </button>
-
-            <button
-              type="submit"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg"
-            >
-              Add Item
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
-    </div>
-  );
+  const change = (event) => setFormData((previous) => ({ ...previous, [event.target.name]: event.target.value }));
+  const handleSubmit = (event) => { event.preventDefault(); onSubmit(); };
+  return <div className="fixed inset-0 z-50 overflow-y-auto bg-black/60 p-4"><div className="mx-auto my-6 w-full max-w-4xl rounded-2xl bg-white p-6 text-slate-900 shadow-2xl">
+    <div className="mb-5 flex items-center justify-between"><div><h2 className="text-2xl font-bold">{title}</h2><p className="text-sm text-slate-500">Fields marked * are required. You can edit barcode results before saving.</p></div><button type="button" onClick={onClose} className="text-2xl text-slate-500">×</button></div>
+    <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">{fields.map(([name,label,type,required]) => <label key={name} className={name === "notes" ? "md:col-span-2" : ""}><span className="mb-1 block text-sm font-medium">{label}{required && " *"}</span>{type === "select" ? <select name={name} required={required} value={formData[name] || ""} onChange={change} className="w-full rounded-lg border border-slate-300 p-2.5">{name === "category" ? <><option value="">Select category</option>{categories.map((category)=><option key={category}>{category}</option>)}</> : <><option value="">Select storage</option><option>Ambient</option><option>Refrigerated</option><option>Frozen</option><option>Cool dry</option></>}</select> : type === "textarea" ? <textarea name={name} value={formData[name] || ""} onChange={change} rows="3" className="w-full rounded-lg border border-slate-300 p-2.5" /> : <input name={name} type={type} min={type === "number" ? "0" : undefined} step={type === "number" ? "0.01" : undefined} required={required} value={formData[name] || ""} onChange={change} className="w-full rounded-lg border border-slate-300 p-2.5" />}</label>)}</form>
+    <div className="mt-5"><BarcodeScanner onBarcodeDetected={(barcode, product) => setFormData((previous) => ({...previous, barcode, ...(product || {})}))} /></div>
+    <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border px-5 py-2.5">Cancel</button><button type="button" disabled={saving} onClick={handleSubmit} className="rounded-lg bg-emerald-600 px-5 py-2.5 font-semibold text-white disabled:opacity-60">{saving ? "Saving…" : "Save item"}</button></div>
+  </div></div>;
 }
-
 export default InventoryForm;

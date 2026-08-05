@@ -8,18 +8,19 @@ import {
 } from "../controllers/surplusController.js";
 
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { roleMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
 // Surplus Food
-router.post("/", authMiddleware, createSurplus);
+router.post("/", authMiddleware, roleMiddleware("business"), createSurplus);
 
-router.get("/", authMiddleware, getAllSurplus);
+router.get("/", authMiddleware, roleMiddleware("business", "ngo"), getAllSurplus);
 
-router.get("/:id", authMiddleware, getSurplusById);
+router.get("/:id", authMiddleware, roleMiddleware("business", "ngo"), getSurplusById);
 
-router.put("/:id", authMiddleware, updateSurplus);
+router.put("/:id", authMiddleware, roleMiddleware("business"), updateSurplus);
 
-router.delete("/:id", authMiddleware, deleteSurplus);
+router.delete("/:id", authMiddleware, roleMiddleware("business"), deleteSurplus);
 
 export default router;

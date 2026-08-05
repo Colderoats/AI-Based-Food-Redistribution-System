@@ -29,7 +29,8 @@ export const registerNGO = async (req, res) => {
     }
 
     const existingNGO = await pool.query(
-      "SELECT * FROM NGO WHERE email = $1",
+      `SELECT email FROM NGO WHERE LOWER(email) = LOWER($1)
+       UNION ALL SELECT email FROM FOOD_BUSINESS WHERE LOWER(email) = LOWER($1)`,
       [email]
     );
 
@@ -215,6 +216,7 @@ export const updateNGOProfile = async (req, res) => {
       ]
     );
 
+    if (result.rows.length === 0) return res.status(404).json({ success: false, message: "NGO not found." });
     res.status(200).json({
       success: true,
       message: "Profile updated successfully.",

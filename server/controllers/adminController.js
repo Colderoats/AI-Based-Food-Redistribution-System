@@ -78,11 +78,11 @@ export const getDashboard = async (req, res) => {
     );
 
     const surplusCount = await pool.query(
-      "SELECT COUNT(*) FROM SURPLUS"
+      "SELECT COUNT(*) FROM surplus_food"
     );
 
     const donationCount = await pool.query(
-      "SELECT COUNT(*) FROM DONATED"
+      "SELECT COUNT(*) FROM donation"
     );
 
     res.status(200).json({

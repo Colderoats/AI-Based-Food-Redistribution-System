@@ -10,8 +10,9 @@ export const getBusinessAnalytics = async (req, res) => {
     const business_id = req.user.id;
 
     const inventory = await pool.query(
-      `SELECT COUNT(*) FROM INVENTORY
-       WHERE business_id = $1`,
+      `SELECT COUNT(*) FROM INVENTORY i
+       JOIN PRODUCT p ON p.product_id = i.product_id
+       WHERE p.business_id = $1`,
       [business_id]
     );
 

@@ -15,9 +15,10 @@ const getHeaders = () => ({
 // =========================
 // Get all inventory
 // =========================
-export const getInventory = async () => {
+export const getInventory = async (params = {}) => {
   const response = await axios.get(API_URL, {
     headers: getHeaders(),
+    params,
   });
 
   return response.data;
@@ -87,3 +88,8 @@ export const uploadCSV = async (formData) => {
 
   return response.data;
 };
+export const getExpiryAlerts = async () => (await axios.get(`${API_URL}/alerts`, { headers: getHeaders() })).data;
+export const removeExpiredInventory = async () => (await axios.delete(`${API_URL}/expired`, { headers: getHeaders() })).data;
+export const removeInventoryItems = async (inventory_ids) => (await axios.delete(`${API_URL}/bulk`, { headers: getHeaders(), data: { inventory_ids } })).data;
+export const lookupBarcode = async (barcode) => (await axios.get(`${API_URL}/barcode/${encodeURIComponent(barcode)}`, { headers: getHeaders() })).data;
+export const getNotifications = async () => (await axios.get("http://localhost:5000/api/notifications/inventory", { headers: getHeaders() })).data;
