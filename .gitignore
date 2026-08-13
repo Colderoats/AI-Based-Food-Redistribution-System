@@ -12,6 +12,7 @@ ai-service/data/raw/
 ai-service/data/processed/
 ai-service/models/
 ai-service/reports/
+ai-service/runtime/
 
 # Secrets
 .env

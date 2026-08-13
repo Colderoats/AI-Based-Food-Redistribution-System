@@ -13,7 +13,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MODEL_DIR = ROOT / "ai-service" / "models" / "risk_scoring"
 
 
-def _load_model() -> tuple[XGBClassifier, dict]:
+def load_model_artifacts() -> tuple[XGBClassifier, dict]:
+    """Load the risk model once for a long-running caller such as FastAPI."""
     metadata = json.loads((MODEL_DIR / "risk_scoring_metadata_v1.json").read_text(encoding="utf-8"))
     model = XGBClassifier()
     model.load_model(MODEL_DIR / "risk_scoring_xgboost_v1.json")
@@ -30,9 +31,11 @@ def recommend_reorder(demand_forecast: float, current_stock: float, storage_capa
 def predict_item(*, category: str, days_to_expiry: float, current_stock: float, demand_forecast: float,
                  historical_damaged_stock_total: float = 0, order_count: float = 0,
                  unique_products: float = 1, month: int = 1, is_weekend: bool = False,
-                 storage_capacity: float = 100) -> dict:
+                 storage_capacity: float = 100, model: XGBClassifier | None = None,
+                 metadata: dict | None = None) -> dict:
     """Return an XGBoost risk score/tier and a capacity-constrained reorder recommendation."""
-    model, metadata = _load_model()
+    if model is None or metadata is None:
+        model, metadata = load_model_artifacts()
     category_codes = metadata["category_codes"]
     if category not in category_codes:
         raise ValueError(f"Unknown category: {category}. Expected one of {sorted(category_codes)}")

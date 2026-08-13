@@ -30,3 +30,11 @@ Next: Part 4 - FastAPI Microservice + Deployment
 
 - **Git hygiene (2026-08-13):** Reset the four unpushed commits after `AI module part 1` and recombined the legitimate changes into a clean commit. Expanded `.gitignore` to exclude `.venv`, dependencies, generated data/model artifacts, secrets, caches, IDE files, logs, and build output. The clean commit was pushed successfully to `origin/master`.
 
+## Part 4 - FastAPI Microservice
+
+- **Implementation:** Added `ai-service/app/` with `POST /predict/risk-score`, `POST /predict/batch`, `GET /predict/reorder-recommendation`, and `GET /health`. All inputs and outputs are validated with Pydantic, and FastAPI publishes interactive OpenAPI documentation at `/docs`.
+- **Startup and scheduling:** The XGBoost model and metadata load once in the FastAPI lifespan. APScheduler scores a local active-inventory snapshot at `BATCH_PREDICTION_INTERVAL_SECONDS` (default 3,600 seconds; 60-second minimum).
+- **Local run:** From the repository root run `python -m pip install -r ai-service/requirements.txt`, then `cd ai-service` and `python -m uvicorn app.main:app --reload --port 8000`.
+- **Downstream contract:** Each prediction contains `inventory_id`, `business_id`, `risk_score`, `risk_tier`, `risk_probabilities`, `reorder_recommendation`, `model_version`, and UTC `predicted_at`. The complete JSON example and PostgreSQL handoff guidance are documented in `ai-service/README.md`.
+- **Stub remaining:** Batch output currently appends JSON Lines to ignored `ai-service/runtime/prediction_outbox.jsonl`; scheduled scoring reads an optional `active_inventory.json` snapshot in the same directory. Replace those adapters with Node.js/PostgreSQL active-inventory reads and `PREDICTIONS` inserts during system integration.
+- **Status:** AI module (Weeks 3-4 scope) is **complete**.

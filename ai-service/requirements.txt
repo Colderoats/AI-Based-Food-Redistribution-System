@@ -4,3 +4,6 @@ scikit-learn
 prophet
 torch
 xgboost
+fastapi
+uvicorn[standard]
+apscheduler
