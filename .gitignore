@@ -1,4 +1,38 @@
-# Kaggle API credentials
+# Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Dependencies
+node_modules/
+
+# Data and model artifacts (regenerated via the data pipeline/training scripts)
+ai-service/data/raw/
+ai-service/data/processed/
+ai-service/models/
+ai-service/reports/
+
+# Secrets
+.env
+.env.*
+!.env.example
 kaggle.json
 .kaggle/
 
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# IDE and operating-system files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and build output
+*.log
+dist/
+build/
+coverage/

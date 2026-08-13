@@ -93,7 +93,7 @@ Kaggle datasets, accessed through the Kaggle API, provide historical sales, purc
 
 _Update this section as work progresses._
 
-- Current status:
-- Next milestone:
-- Current blockers:
-- Planned next actions:
+- Current status: AI module Parts 1-3 are complete. The chronological Blinkit-derived dataset and the seven-category Prophet/LSTM forecasting artifacts are available under `ai-service/data/processed/` and `ai-service/models/forecasting/`. The XGBoost risk classifier and metadata are saved under `ai-service/models/risk_scoring/`; its standalone prediction functions are in `ai-service/risk_scoring/predict.py`.
+- Next milestone: Part 4 - wrap forecasting, risk scoring, and reorder recommendations in the FastAPI microservice and prepare deployment.
+- Current blockers: Storage capacity is not yet represented in the data pipeline, so the reorder module takes it as a caller-supplied parameter.
+- Planned next actions: expose the standalone prediction functions through FastAPI without retraining the saved models.
