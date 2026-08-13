@@ -28,4 +28,5 @@ Next: Part 3 - Waste Risk Scoring + Reorder Recommendation (XGBoost)
 
 Next: Part 4 - FastAPI Microservice + Deployment
 
+- **Git hygiene (2026-08-13):** Reset the four unpushed commits after `AI module part 1` and recombined the legitimate changes into a clean commit. Expanded `.gitignore` to exclude `.venv`, dependencies, generated data/model artifacts, secrets, caches, IDE files, logs, and build output. The clean commit was pushed successfully to `origin/master`.
 
