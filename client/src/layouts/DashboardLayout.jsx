@@ -1,4 +1,4 @@
-import { Bell, Building2, HandHeart, LayoutDashboard, Leaf, ListChecks, LogOut, Package, UserCircle, UsersRound, UserPen } from "lucide-react";
+import { Bell, Building2, HandHeart, LayoutDashboard, Leaf, ListChecks, LogOut, Package, ShieldAlert, UserCircle, UsersRound, UserPen } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useCallback, useEffect, useState } from "react";
 import { deleteInventory, getNotifications, removeExpiredInventory } from "../services/inventoryService";
@@ -36,6 +36,7 @@ function DashboardLayout({
         { label: "Dashboard", path: "/business/dashboard", icon: LayoutDashboard },
         { label: "Business overview", path: "/business/overview", icon: Building2 },
         { label: "Inventory", path: "/business/inventory", icon: Package },
+        { label: "Expiry alerts", path: "/business/expiry-alerts", icon: ShieldAlert },
         { label: "Surplus listings", path: "/business/surplus", icon: ListChecks },
         { label: "NGO requests", path: "/business/requests", icon: HandHeart },
         { label: "NGO partners", path: "/business/partners", icon: UsersRound },

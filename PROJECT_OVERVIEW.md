@@ -21,7 +21,7 @@ It is a dual-sided platform:
 ### Weeks 1–2: Inventory foundation
 
 - Support manual, CSV, and POS-API inventory input.
-- Build an expiry-tracking engine with automated threshold alerts.
+- Build an AI-driven expiry-tracking engine with automated threshold alerts.
 - Categorize products using a food taxonomy based on perishability and storage requirements.
 - Add barcode/QR scanning for mobile inventory updates.
 - Create a multi-tenant database for inventory, transactions, and donation logs.
@@ -93,11 +93,18 @@ Kaggle datasets, accessed through the Kaggle API, provide historical sales, purc
 
 _Update this section as work progresses._
 
-- Current status: Part 5 backend integration is complete. The Node.js inventory flows request and persist immediate FastAPI risk scores, while the FastAPI scheduled batch job reads live PostgreSQL inventory and stores results in `PREDICTIONS`.
+- Current status: The AI expiry-alert integration phase is complete. Business users receive persisted AI risk scores on inventory create/update, live prediction updates, and dedicated expiry-alert and dashboard views.
 - Git hygiene (2026-08-13): The four unpushed commits after `AI module part 1` were reset and recombined into a clean commit. `.gitignore` now excludes local environments and generated artifacts; the clean commit was pushed successfully to `origin/master`.
 - Next milestone: Redistribution Marketplace & Analytics Dashboard (Weeks 5-6).
 - Current blockers: Storage capacity is not yet represented in the data pipeline, so the reorder module uses a conservative per-item default until capacity is modelled. There is no remaining JSON-outbox or local-snapshot dependency.
 - Planned next actions: build surplus listings, AI-supported NGO matching, pickup scheduling, and the business/NGO sustainability dashboards.
+
+## Part 6 - Frontend Integration
+
+- Added the business-only `/business/expiry-alerts` route and sidebar entry. It displays each alert's item, days to expiry, configured threshold, AI risk tier/score, and recommended action, with risk-tier filtering and risk/days sorting.
+- Updated the business dashboard with live AI risk scores, recommended actions, and reorder quantities while leaving the manual, CSV, and POS inventory views untouched.
+- Both AI surfaces subscribe to the authenticated Socket.IO `ai:predictions-updated` event and retain a 60-second fallback refresh for scheduled scoring environments that do not publish the event.
+- The Node backend emits the business-scoped update event immediately after a create/update prediction is persisted. FastAPI remains available for manual API testing through its existing local `/docs` endpoint only; no frontend route, link, or proxy is provided.
 
 ## Part 5 â€” Backend Integration
 

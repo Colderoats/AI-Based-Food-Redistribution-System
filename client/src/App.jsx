@@ -14,6 +14,7 @@ import AvailableFood from "./pages/NGO/AvailableFood";
 import Partners from "./pages/Shared/Partners";
 import Profile from "./pages/Shared/Profile";
 import Overview from "./pages/Shared/Overview";
+import ExpiryAlerts from "./pages/Business/ExpiryAlerts";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
           element={<Inventory />}
 />
         <Route path="/business/surplus" element={<Surplus />} />
+        <Route path="/business/expiry-alerts" element={<ExpiryAlerts />} />
         <Route path="/business/overview" element={<Overview />} />
         <Route path="/business/partners" element={<Partners />} />
         <Route path="/business/profile" element={<Profile />} />

@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import { FOOD_CATEGORIES, getExpiryStatus, normalizeCategory, withExpiryStatus } from "../utils/inventoryEngine.js";
 import { scoreAndPersistInventory } from "../services/aiPredictionService.js";
+import { emitAiPredictionUpdated } from "../services/aiUpdateEmitter.js";
 
 const fields = ["product_code", "product_name", "category", "unit_price", "quantity", "unit", "purchase_date", "expiry_date", "supplier", "batch_number", "storage_type", "purchase_cost", "selling_price", "barcode", "notes", "alert_days"];
 const clean = (body) => Object.fromEntries(fields.map((key) => [key, body[key] === "" ? null : body[key]]));
@@ -34,7 +35,7 @@ const respondError = (res, error) => res.status(error.validation ? 400 : 500).js
 
 const scoreInventory = async (item, businessId) => {
   const client = await pool.connect();
-  try { return await scoreAndPersistInventory(item, businessId, client); }
+  try { const prediction = await scoreAndPersistInventory(item, businessId, client); emitAiPredictionUpdated(businessId, prediction); return prediction; }
   finally { client.release(); }
 };
 

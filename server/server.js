@@ -1,13 +1,32 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { createServer } from "node:http";
+import jwt from "jsonwebtoken";
+import { Server } from "socket.io";
 
 import routes from "./routes/index.js";
 import pool from "./config/db.js";
+import { initializeAiUpdateEmitter } from "./services/aiUpdateEmitter.js";
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+const io = new Server(httpServer, { cors: { origin: true, methods: ["GET", "POST"] } });
+
+io.use((socket, next) => {
+  try {
+    const user = jwt.verify(socket.handshake.auth?.token, process.env.JWT_SECRET);
+    if (user.role !== "business") return next(new Error("Business access required"));
+    socket.businessId = String(user.id);
+    return next();
+  } catch {
+    return next(new Error("Authentication required"));
+  }
+});
+io.on("connection", (socket) => socket.join(`business:${socket.businessId}`));
+initializeAiUpdateEmitter(io);
 
 // ===============================
 // Middlewareeeee
@@ -81,6 +100,6 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
 });

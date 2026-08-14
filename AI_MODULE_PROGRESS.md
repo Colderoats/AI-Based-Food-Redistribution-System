@@ -45,3 +45,18 @@ Next: Part 4 - FastAPI Microservice + Deployment
 - **Live integration:** Node.js calls FastAPI `POST /predict/risk-score` after inventory creation, quantity/expiry updates, and CSV imports, then persists each response. FastAPI `POST /predict/batch` and APScheduler now read/write PostgreSQL directly instead of using the JSON outbox and local snapshot.
 - **Alerting:** `GET /api/expiry-alerts`, existing inventory alerts, and business notifications are driven by the latest AI `risk_tier`/`risk_score`; `alert_days` is retained as an input/context signal. Alerts include days to expiry, AI recommendation, and prediction time for the forthcoming UI.
 - **Configuration and blocker update:** `BATCH_PREDICTION_INTERVAL_SECONDS` remains environment-configurable (default 3,600 seconds; 60-second minimum). The only current AI data-model limitation is the lack of explicit storage-capacity data; a conservative item-level default is used until it is modelled.
+
+## Part 6 - Frontend Integration
+
+- **Expiry alerts:** Added a separate business route at `/business/expiry-alerts` with navigation, risk-tier filtering, and sorting by AI risk score or days to expiry. The page shows the required item, days-to-expiry, configured threshold, risk tier/score, and recommended action fields.
+- **Business dashboard:** Replaced the AI placeholder with current elevated-risk scores, recommended actions, and reorder quantities from the existing alert API. Existing manual, CSV, and POS inventory experiences remain unchanged.
+- **Live refresh:** The alerts page and dashboard subscribe to the authenticated Socket.IO `ai:predictions-updated` event, and use a one-minute fallback refresh so immediate and scheduled Part 5 scoring results appear without a manual reload.
+
+## Part 7 - End-to-End Integration Verification
+
+- **Status:** Complete. An inventory create or expiry/quantity update is scored by FastAPI, persisted in `PREDICTIONS`, then immediately publishes an authenticated, business-scoped `ai:predictions-updated` event. The Expiry Alerts page and business dashboard reload the latest persisted AI alert data on that event; their one-minute refresh remains the fallback for scheduled FastAPI scoring.
+- **Contract corrections:** Risk scores are displayed as their persisted 0-100 percentage values, and dashboard reorder quantities use the FastAPI `recommended_purchase_quantity` contract.
+- **Swagger boundary:** FastAPI's existing local `/docs` remains unchanged for manual service testing. The browser client has no docs page, link, or FastAPI proxy; it continues to call only the Node API.
+- **Scope review:** Changes are limited to AI prediction persistence/integration, its real-time notification path, the AI alert/dashboard UI, and this documentation.
+
+Next: Weeks 5-6 redistribution marketplace, NGO matching, pickup scheduling, and sustainability dashboards.
