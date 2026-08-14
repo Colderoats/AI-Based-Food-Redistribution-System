@@ -38,3 +38,10 @@ Next: Part 4 - FastAPI Microservice + Deployment
 - **Downstream contract:** Each prediction contains `inventory_id`, `business_id`, `risk_score`, `risk_tier`, `risk_probabilities`, `reorder_recommendation`, `model_version`, and UTC `predicted_at`. The complete JSON example and PostgreSQL handoff guidance are documented in `ai-service/README.md`.
 - **Stub remaining:** Batch output currently appends JSON Lines to ignored `ai-service/runtime/prediction_outbox.jsonl`; scheduled scoring reads an optional `active_inventory.json` snapshot in the same directory. Replace those adapters with Node.js/PostgreSQL active-inventory reads and `PREDICTIONS` inserts during system integration.
 - **Status:** AI module (Weeks 3-4 scope) is **complete**.
+
+## Part 5 â€” Backend Integration
+
+- **PostgreSQL persistence:** Added `server/database/005_ai_predictions.sql` and a `PREDICTIONS` repository contract for `inventory_id`, `business_id`, risk score/tier/probabilities, reorder recommendation, model version, and prediction timestamp.
+- **Live integration:** Node.js calls FastAPI `POST /predict/risk-score` after inventory creation, quantity/expiry updates, and CSV imports, then persists each response. FastAPI `POST /predict/batch` and APScheduler now read/write PostgreSQL directly instead of using the JSON outbox and local snapshot.
+- **Alerting:** `GET /api/expiry-alerts`, existing inventory alerts, and business notifications are driven by the latest AI `risk_tier`/`risk_score`; `alert_days` is retained as an input/context signal. Alerts include days to expiry, AI recommendation, and prediction time for the forthcoming UI.
+- **Configuration and blocker update:** `BATCH_PREDICTION_INTERVAL_SECONDS` remains environment-configurable (default 3,600 seconds; 60-second minimum). The only current AI data-model limitation is the lack of explicit storage-capacity data; a conservative item-level default is used until it is modelled.

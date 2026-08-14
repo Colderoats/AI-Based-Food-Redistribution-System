@@ -59,11 +59,12 @@ def batch_predict(payload: BatchPredictionRequest, request: Request) -> BatchPre
     try:
         service = request.app.state.prediction_service
         predictions = service.score_batch(payload.business_id, payload.inventory)
+        service.persist_predictions(predictions)
         return BatchPredictionResponse(
             business_id=payload.business_id,
             prediction_count=len(predictions),
             predictions=predictions,
-            outbox_file=service.write_outbox(predictions),
+            delivery="postgres",
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

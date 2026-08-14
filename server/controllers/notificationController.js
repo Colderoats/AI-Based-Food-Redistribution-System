@@ -1,5 +1,4 @@
 import pool from "../config/db.js";
-import { getExpiryStatus } from "../utils/inventoryEngine.js";
 
 const getNotificationTableExists = async () => {
   const result = await pool.query(
@@ -21,34 +20,35 @@ export const getNotifications = async (req, res) => {
         p.product_name,
         p.category,
         i.expiry_date,
-        i.quantity,
-        p.business_id
+        i.quantity, i.alert_days,
+        pr.risk_score, pr.risk_tier, pr.reorder_recommendation, pr.predicted_at
       FROM inventory i
       JOIN product p ON p.product_id = i.product_id
-      WHERE p.business_id = $1
-      ORDER BY i.expiry_date ASC`,
+      JOIN LATERAL (SELECT * FROM predictions WHERE inventory_id = i.inventory_id ORDER BY predicted_at DESC LIMIT 1) pr ON true
+      WHERE p.business_id = $1 AND pr.risk_tier IN ('medium', 'high')
+      ORDER BY pr.risk_score DESC, i.expiry_date ASC`,
       [businessId]
     );
 
     const alerts = inventoryResult.rows
       .map((item) => {
-        const status = getExpiryStatus(item.expiry_date, 7);
-        const isExpired = status.level === "expired";
-        const isToday = status.level === "today";
-        const isNearExpiry = status.level === "near_expiry";
+        const daysLeft = Math.ceil((new Date(item.expiry_date).setHours(0,0,0,0) - new Date().setHours(0,0,0,0)) / 86400000);
+        const highRisk = item.risk_tier === "high";
         return {
           id: `alert-${item.inventory_id}`,
           inventory_id: item.inventory_id,
-          type: isExpired ? "expired" : isToday || isNearExpiry ? "expiring" : "monitoring",
-          title: isExpired ? `${item.product_name} expired` : `${item.product_name} is nearing expiry`,
-          message: `${item.product_name} expires in ${status.daysRemaining ?? "unknown"} days and needs action.`,
-          daysLeft: status.daysRemaining,
+          type: "ai_expiry_risk",
+          title: `${item.product_name} has ${item.risk_tier} waste risk`,
+          message: `${item.product_name} has an AI risk score of ${item.risk_score} and expires in ${daysLeft} days.`,
+          daysLeft,
           category: item.category,
-          priority: isExpired || isToday ? "high" : isNearExpiry ? "medium" : "low",
-          expiry: status,
+          priority: highRisk ? "high" : "medium",
+          riskTier: item.risk_tier, riskScore: Number(item.risk_score),
+          recommendedAction: highRisk ? "Prioritize redistribution or discounting." : "Monitor demand and prepare a redistribution plan.",
+          thresholdExceeded: daysLeft <= Number(item.alert_days || 7),
+          expiry: { daysRemaining: daysLeft },
         };
-      })
-      .filter((alert) => alert.daysLeft !== null && alert.daysLeft <= 14);
+      });
 
     const summary = {
       total: alerts.length,

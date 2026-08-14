@@ -59,8 +59,7 @@ class BatchPredictionResponse(BaseModel):
     business_id: str
     prediction_count: int
     predictions: list[PredictionResult]
-    delivery: Literal["local_json_outbox"] = "local_json_outbox"
-    outbox_file: str
+    delivery: Literal["postgres"] = "postgres"
 
 
 class HealthResponse(BaseModel):

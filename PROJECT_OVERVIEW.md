@@ -93,11 +93,18 @@ Kaggle datasets, accessed through the Kaggle API, provide historical sales, purc
 
 _Update this section as work progresses._
 
-- Current status: The AI-Based Waste Prediction Engine (Weeks 3-4) is complete. The chronological Blinkit-derived dataset and seven-category Prophet/LSTM forecasting artifacts are available under `ai-service/data/processed/` and `ai-service/models/forecasting/`. The XGBoost risk classifier is served by FastAPI from `ai-service/app/`, with validated real-time, batch, and reorder endpoints plus scheduled batch scoring.
+- Current status: Part 5 backend integration is complete. The Node.js inventory flows request and persist immediate FastAPI risk scores, while the FastAPI scheduled batch job reads live PostgreSQL inventory and stores results in `PREDICTIONS`.
 - Git hygiene (2026-08-13): The four unpushed commits after `AI module part 1` were reset and recombined into a clean commit. `.gitignore` now excludes local environments and generated artifacts; the clean commit was pushed successfully to `origin/master`.
 - Next milestone: Redistribution Marketplace & Analytics Dashboard (Weeks 5-6).
-- Current blockers: Storage capacity is not yet represented in the data pipeline, so the reorder module takes it as a caller-supplied parameter. Batch persistence is intentionally a local JSON outbox stub until the Node.js/PostgreSQL integration phase.
+- Current blockers: Storage capacity is not yet represented in the data pipeline, so the reorder module uses a conservative per-item default until capacity is modelled. There is no remaining JSON-outbox or local-snapshot dependency.
 - Planned next actions: build surplus listings, AI-supported NGO matching, pickup scheduling, and the business/NGO sustainability dashboards.
+
+## Part 5 â€” Backend Integration
+
+- Added `server/database/005_ai_predictions.sql` for PostgreSQL-backed `PREDICTIONS` storage, including the inventory/business relationships, risk payloads, model version, timestamp, and lookup indexes.
+- Added a Node.js FastAPI client. New, updated, and CSV-imported inventory is scored immediately through `POST /predict/risk-score` and persisted after the inventory transaction commits. `AI_SERVICE_URL` and `AI_SERVICE_TIMEOUT_MS` are configurable environment variables.
+- Replaced the FastAPI JSON outbox and local active-inventory snapshot with PostgreSQL reads/writes. Both `POST /predict/batch` and APScheduler persist batch results; the existing `BATCH_PREDICTION_INTERVAL_SECONDS` environment variable controls the cadence.
+- Expiry alerts and business notifications now use each inventory item's latest AI risk tier/score. The business `alert_days` threshold remains exposed as a contextual signal. `GET /api/expiry-alerts` returns the data required by a dedicated expiry-alert UI, including item/business, days to expiry, risk, recommendation, and prediction timestamp.
 
 # Data Summary
 

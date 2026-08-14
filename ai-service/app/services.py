@@ -1,21 +1,39 @@
-"""Prediction orchestration and the temporary local outbox adapter."""
+"""Prediction orchestration and PostgreSQL persistence adapters."""
 
 from __future__ import annotations
 
-import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+import psycopg
+from dotenv import load_dotenv
+from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 from risk_scoring.predict import load_model_artifacts, predict_item, recommend_reorder
 
 from .schemas import InventoryItem
 
 
+MODEL_CATEGORIES = {"Beverages", "Dairy", "Dry Goods", "Frozen Foods", "Fruits", "Other", "Snacks"}
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
-RUNTIME_DIR = SERVICE_ROOT / "runtime"
-OUTBOX_FILE = RUNTIME_DIR / "prediction_outbox.jsonl"
-ACTIVE_INVENTORY_FILE = RUNTIME_DIR / "active_inventory.json"
+
+# Local development shares the backend's database configuration; deployed
+# environments should provide these variables directly and take precedence.
+load_dotenv(SERVICE_ROOT.parent / "server" / ".env")
+
+
+def database_url() -> str:
+    """Use DATABASE_URL when supplied, otherwise share the Node/PostgreSQL env contract."""
+    if url := os.getenv("DATABASE_URL"):
+        return url
+    return "host={host} port={port} dbname={database} user={user} password={password}".format(
+        host=os.getenv("DB_HOST", "localhost"), port=os.getenv("DB_PORT", "5432"),
+        database=os.getenv("DB_NAME", "food_redistribution"), user=os.getenv("DB_USER", "postgres"),
+        password=os.getenv("DB_PASSWORD", ""),
+    )
 
 
 class PredictionService:
@@ -37,24 +55,39 @@ class PredictionService:
     def score_batch(self, business_id: str, inventory: list[InventoryItem]) -> list[dict[str, Any]]:
         return [self.score_item(business_id, item) for item in inventory]
 
-    def write_outbox(self, predictions: list[dict[str, Any]]) -> str:
-        RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
-        with OUTBOX_FILE.open("a", encoding="utf-8") as output:
-            for prediction in predictions:
-                output.write(json.dumps(prediction) + "\n")
-        return str(OUTBOX_FILE.relative_to(SERVICE_ROOT))
+    def persist_predictions(self, predictions: list[dict[str, Any]]) -> None:
+        if not predictions:
+            return
+        with psycopg.connect(database_url()) as connection:
+            with connection.cursor() as cursor:
+                cursor.executemany(
+                    """INSERT INTO predictions (inventory_id, business_id, risk_score, risk_tier, risk_probabilities,
+                       reorder_recommendation, model_version, predicted_at)
+                       VALUES (%(inventory_id)s, %(business_id)s, %(risk_score)s, %(risk_tier)s,
+                       %(risk_probabilities)s, %(reorder_recommendation)s, %(model_version)s, %(predicted_at)s)""",
+                    [{**prediction, "risk_probabilities": Jsonb(prediction["risk_probabilities"]),
+                      "reorder_recommendation": Jsonb(prediction["reorder_recommendation"])} for prediction in predictions],
+                )
 
     def run_scheduled_batch(self) -> None:
-        """Score a local active-inventory snapshot until the DB adapter is implemented."""
-        if not ACTIVE_INVENTORY_FILE.exists():
-            return
-        records = json.loads(ACTIVE_INVENTORY_FILE.read_text(encoding="utf-8"))
+        """Read current inventory from PostgreSQL and persist one new prediction per item."""
+        with psycopg.connect(database_url(), row_factory=dict_row) as connection:
+            with connection.cursor() as cursor:
+                cursor.execute("""SELECT i.inventory_id, p.business_id, p.category, i.quantity, i.expiry_date
+                    FROM inventory i JOIN product p ON p.product_id = i.product_id
+                    WHERE i.expiry_date >= CURRENT_DATE AND i.quantity > 0""")
+                records = cursor.fetchall()
         grouped: dict[str, list[InventoryItem]] = {}
+        now = datetime.now(timezone.utc)
         for record in records:
-            business_id = record.pop("business_id")
-            grouped.setdefault(business_id, []).append(InventoryItem(**record))
+            category = record["category"] if record["category"] in MODEL_CATEGORIES else "Other"
+            days_to_expiry = max(0, (record["expiry_date"] - now.date()).days)
+            item = InventoryItem(inventory_id=str(record["inventory_id"]), category=category,
+                days_to_expiry=days_to_expiry, current_stock=float(record["quantity"]),
+                demand_forecast=0, storage_capacity=max(float(record["quantity"]), 100))
+            grouped.setdefault(str(record["business_id"]), []).append(item)
         for business_id, inventory in grouped.items():
-            self.write_outbox(self.score_batch(business_id, inventory))
+            self.persist_predictions(self.score_batch(business_id, inventory))
 
     @staticmethod
     def reorder(demand_forecast: float, current_stock: float, storage_capacity: float, safety_stock_days: float) -> dict:

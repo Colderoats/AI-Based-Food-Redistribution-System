@@ -10,6 +10,9 @@ import surplusRoutes from "./surplusRoutes.js";
 import logisticsRoutes from "./logisticsRoutes.js";
 import matchRoutes from "./matchRoutes.js";
 import authRoutes from "./authRoutes.js";
+import { getExpiryAlerts } from "../controllers/inventoryController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
+import { roleMiddleware } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
@@ -23,5 +26,6 @@ router.use("/surplus", surplusRoutes);
 router.use("/logistics", logisticsRoutes);
 router.use("/matches", matchRoutes);
 router.use("/auth", authRoutes);
+router.get("/expiry-alerts", authMiddleware, roleMiddleware("business"), getExpiryAlerts);
 
 export default router;

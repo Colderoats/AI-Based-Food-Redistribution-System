@@ -31,6 +31,6 @@ Every scored inventory item uses this contract for Node.js / PostgreSQL:
 }
 ```
 
-`POST /predict/batch` writes one contract object per line to the ignored local outbox `ai-service/runtime/prediction_outbox.jsonl`. APScheduler runs on `BATCH_PREDICTION_INTERVAL_SECONDS` (default: 3600 seconds; minimum: 60) and reads `ai-service/runtime/active_inventory.json` when present. That temporary JSON array must contain the request item fields plus `business_id`.
+`POST /predict/batch` persists its returned predictions to PostgreSQL. APScheduler also reads live active `inventory` rows from PostgreSQL and persists a fresh prediction for each item on `BATCH_PREDICTION_INTERVAL_SECONDS` (default: 3600 seconds; minimum: 60). Set that environment variable to a shorter value when testing a faster cadence.
 
-To replace the stub, Node.js should either call `/predict/batch` with its active inventory or implement an adapter that reads active inventory from PostgreSQL and persists each outbox contract into `PREDICTIONS`. No database or Node.js integration is included here.
+The service accepts `DATABASE_URL`, or the same `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` environment variables used by the Node.js backend (the local `server/.env` is loaded for development). Apply `server/database/005_ai_predictions.sql` before starting scheduled scoring.
