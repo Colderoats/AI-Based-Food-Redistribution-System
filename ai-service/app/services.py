@@ -18,6 +18,7 @@ from .schemas import InventoryItem
 
 
 MODEL_CATEGORIES = {"Beverages", "Dairy", "Dry Goods", "Frozen Foods", "Fruits", "Other", "Snacks"}
+FALLBACK_DAILY_DEMAND = 1
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
 
 # Local development shares the backend's database configuration; deployed
@@ -84,7 +85,8 @@ class PredictionService:
             days_to_expiry = max(0, (record["expiry_date"] - now.date()).days)
             item = InventoryItem(inventory_id=record["inventory_id"], category=category,
                 days_to_expiry=days_to_expiry, current_stock=float(record["quantity"]),
-                demand_forecast=0, storage_capacity=max(float(record["quantity"]), 100))
+                demand_forecast=FALLBACK_DAILY_DEMAND,
+                storage_capacity=max(float(record["quantity"]), 100))
             grouped.setdefault(record["business_id"], []).append(item)
         for business_id, inventory in grouped.items():
             self.persist_predictions(self.score_batch(business_id, inventory))

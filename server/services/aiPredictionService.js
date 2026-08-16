@@ -1,5 +1,8 @@
 const AI_SERVICE_URL = (process.env.AI_SERVICE_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 const AI_TIMEOUT_MS = Number(process.env.AI_SERVICE_TIMEOUT_MS || 5000);
+// Inventory does not yet retain a demand forecast. Keep low-stock items actionable
+// until that data is modelled rather than sending a zero-demand reorder request.
+const FALLBACK_DAILY_DEMAND = 1;
 
 const daysToExpiry = (expiryDate) => Math.max(0, Math.ceil((new Date(expiryDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86400000));
 const modelCategory = (category) => ["Beverages", "Dairy", "Dry Goods", "Frozen Foods", "Fruits", "Other", "Snacks"].includes(category) ? category : "Other";
@@ -7,7 +10,7 @@ const modelCategory = (category) => ["Beverages", "Dairy", "Dry Goods", "Frozen 
 export const toRiskScorePayload = (item, businessId) => ({
   inventory_id: Number(item.inventory_id), business_id: Number(businessId), category: modelCategory(item.category),
   days_to_expiry: daysToExpiry(item.expiry_date), current_stock: Number(item.quantity),
-  demand_forecast: Number(item.demand_forecast || 0), historical_damaged_stock_total: 0,
+  demand_forecast: Number(item.demand_forecast) > 0 ? Number(item.demand_forecast) : FALLBACK_DAILY_DEMAND, historical_damaged_stock_total: 0,
   order_count: 0, unique_products: 1, month: new Date().getUTCMonth() + 1,
   is_weekend: [0, 6].includes(new Date().getUTCDay()), storage_capacity: Math.max(Number(item.quantity), 100),
 });

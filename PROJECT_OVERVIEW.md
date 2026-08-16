@@ -146,3 +146,8 @@ _Update this section as work progresses._
 | Train | 1,744 | 2023-03-16 to 2024-05-08 |
 | Validation | 375 | 2024-05-09 to 2024-08-06 |
 | Test | 367 | 2024-08-07 to 2024-11-04 |
+
+## Reorder Recommendation Update (2026-08-16)
+
+- Inventory records without a retained demand forecast now use a conservative one-unit daily fallback, allowing low-stock items to receive a numeric reorder recommendation.
+- Reorder target stock is capped at available storage capacity, matching the purchase-quantity capacity constraint.

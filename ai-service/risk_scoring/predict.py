@@ -23,7 +23,7 @@ def load_model_artifacts() -> tuple[XGBClassifier, dict]:
 
 def recommend_reorder(demand_forecast: float, current_stock: float, storage_capacity: float, safety_stock_days: float = 2) -> dict:
     """Recommend up to the capacity left after retaining forecast safety stock."""
-    target_stock = max(0.0, demand_forecast * safety_stock_days)
+    target_stock = min(max(0.0, demand_forecast * safety_stock_days), max(0.0, storage_capacity))
     quantity = min(max(0.0, target_stock - current_stock), max(0.0, storage_capacity - current_stock))
     return {"recommended_purchase_quantity": round(quantity, 2), "target_stock": round(target_stock, 2), "storage_capacity": storage_capacity}
 

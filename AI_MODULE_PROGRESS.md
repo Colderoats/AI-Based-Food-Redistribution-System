@@ -61,3 +61,8 @@ Next: Part 4 - FastAPI Microservice + Deployment
 - **Scope review:** Changes are limited to AI prediction persistence/integration, its real-time notification path, the AI alert/dashboard UI, and this documentation.
 
 Next: Weeks 5-6 redistribution marketplace, NGO matching, pickup scheduling, and sustainability dashboards.
+
+## Reorder Recommendation Update (2026-08-16)
+
+- Reorder target stock is now capped at storage capacity, matching the existing purchase-quantity capacity constraint.
+- Inventory create/update and scheduled scoring use a conservative one-unit daily demand fallback when no retained forecast is available, so low-stock items receive a numeric reorder recommendation.
