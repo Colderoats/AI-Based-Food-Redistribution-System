@@ -1,0 +1,4 @@
+product_id,product_name,category,quantity,unit,purchase_date,expiry_date,supplier,batch_number,storage_type,alert_days,demand_forecast
+REORDER-MILK-01,Low Stock Milk,Dairy,12,units,2026-08-15,2026-08-19,Demo Supplier,REORDER-001,Refrigerated,7,48
+REORDER-APPLE-01,Low Stock Apples,Fruits,18,units,2026-08-15,2026-08-20,Demo Supplier,REORDER-002,Cool dry,7,35
+REORDER-JUICE-01,Low Stock Juice,Beverages,10,units,2026-08-15,2026-08-21,Demo Supplier,REORDER-003,Cool dry,7,30

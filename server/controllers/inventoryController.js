@@ -3,7 +3,7 @@ import { FOOD_CATEGORIES, getExpiryStatus, normalizeCategory, withExpiryStatus }
 import { scoreAndPersistInventory } from "../services/aiPredictionService.js";
 import { emitAiPredictionUpdated } from "../services/aiUpdateEmitter.js";
 
-const fields = ["product_code", "product_name", "category", "unit_price", "quantity", "unit", "purchase_date", "expiry_date", "supplier", "batch_number", "storage_type", "purchase_cost", "selling_price", "barcode", "notes", "alert_days"];
+const fields = ["product_code", "product_name", "category", "unit_price", "quantity", "unit", "purchase_date", "expiry_date", "supplier", "batch_number", "storage_type", "purchase_cost", "selling_price", "barcode", "notes", "alert_days", "demand_forecast"];
 const clean = (body) => Object.fromEntries(fields.map((key) => [key, body[key] === "" ? null : body[key]]));
 
 const validate = (item) => {
@@ -26,7 +26,7 @@ const insertItem = async (client, businessId, raw) => {
     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING product_id`, [businessId, item.product_code.trim(), item.product_name.trim(), item.category, item.unit_price || item.selling_price || item.purchase_cost || 0, item.barcode, item.storage_type || "cool-dry"]);
   const inventory = await client.query(`INSERT INTO inventory (product_id, quantity, purchase_date, expiry_date, unit, supplier, batch_number, storage_type, purchase_cost, selling_price, barcode, notes, alert_days)
     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING inventory_id`, [product.rows[0].product_id, item.quantity, item.purchase_date, item.expiry_date, item.unit, item.supplier, item.batch_number, item.storage_type, item.purchase_cost, item.selling_price, item.barcode, item.notes, item.alert_days || 7]);
-  return getById(client, businessId, inventory.rows[0].inventory_id);
+  return { ...await getById(client, businessId, inventory.rows[0].inventory_id), demand_forecast: item.demand_forecast };
 };
 
 const select = `SELECT i.inventory_id, p.product_id, p.sku AS product_code, p.product_name, p.category, p.unit_price, i.quantity, i.unit, i.purchase_date, i.expiry_date, i.supplier, i.batch_number, i.storage_type, i.purchase_cost, i.selling_price, COALESCE(i.barcode,p.barcode) AS barcode, i.notes, i.alert_days, i.created_at FROM inventory i JOIN product p ON p.product_id=i.product_id WHERE p.business_id=$1`;
