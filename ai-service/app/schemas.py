@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 
 
 class InventoryItem(BaseModel):
-    inventory_id: str = Field(min_length=1, max_length=100)
+    inventory_id: int = Field(gt=0)
     category: str = Field(min_length=1, max_length=100)
     days_to_expiry: float = Field(ge=0)
     current_stock: float = Field(ge=0)
@@ -23,11 +23,11 @@ class InventoryItem(BaseModel):
 
 
 class RiskScoreRequest(InventoryItem):
-    business_id: str = Field(min_length=1, max_length=100)
+    business_id: int = Field(gt=0)
 
 
 class BatchPredictionRequest(BaseModel):
-    business_id: str = Field(min_length=1, max_length=100)
+    business_id: int = Field(gt=0)
     inventory: list[InventoryItem] = Field(min_length=1)
 
 
@@ -45,8 +45,8 @@ class ReorderRecommendationResponse(BaseModel):
 
 
 class PredictionResult(BaseModel):
-    inventory_id: str
-    business_id: str
+    inventory_id: int
+    business_id: int
     risk_score: float = Field(ge=0, le=100)
     risk_tier: Literal["low", "medium", "high"]
     risk_probabilities: dict[str, float]
@@ -56,7 +56,7 @@ class PredictionResult(BaseModel):
 
 
 class BatchPredictionResponse(BaseModel):
-    business_id: str
+    business_id: int
     prediction_count: int
     predictions: list[PredictionResult]
     delivery: Literal["postgres"] = "postgres"

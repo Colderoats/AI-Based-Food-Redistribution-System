@@ -5,7 +5,7 @@ const daysToExpiry = (expiryDate) => Math.max(0, Math.ceil((new Date(expiryDate)
 const modelCategory = (category) => ["Beverages", "Dairy", "Dry Goods", "Frozen Foods", "Fruits", "Other", "Snacks"].includes(category) ? category : "Other";
 
 export const toRiskScorePayload = (item, businessId) => ({
-  inventory_id: String(item.inventory_id), business_id: String(businessId), category: modelCategory(item.category),
+  inventory_id: Number(item.inventory_id), business_id: Number(businessId), category: modelCategory(item.category),
   days_to_expiry: daysToExpiry(item.expiry_date), current_stock: Number(item.quantity),
   demand_forecast: Number(item.demand_forecast || 0), historical_damaged_stock_total: 0,
   order_count: 0, unique_products: 1, month: new Date().getUTCMonth() + 1,
@@ -22,7 +22,7 @@ const callAi = async (path, payload) => {
 };
 
 export const requestRiskScore = (item, businessId) => callAi("/predict/risk-score", toRiskScorePayload(item, businessId));
-export const requestBatchPrediction = (businessId, inventory) => callAi("/predict/batch", { business_id: String(businessId), inventory: inventory.map((item) => toRiskScorePayload(item, businessId)) });
+export const requestBatchPrediction = (businessId, inventory) => callAi("/predict/batch", { business_id: Number(businessId), inventory: inventory.map((item) => toRiskScorePayload(item, businessId)) });
 
 export const persistPrediction = async (client, prediction) => {
   await client.query(`INSERT INTO predictions (inventory_id, business_id, risk_score, risk_tier, risk_probabilities, reorder_recommendation, model_version, predicted_at)

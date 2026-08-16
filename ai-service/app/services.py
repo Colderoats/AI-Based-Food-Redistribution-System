@@ -40,7 +40,7 @@ class PredictionService:
     def __init__(self) -> None:
         self.model, self.metadata = load_model_artifacts()
 
-    def score_item(self, business_id: str, item: InventoryItem) -> dict[str, Any]:
+    def score_item(self, business_id: int, item: InventoryItem) -> dict[str, Any]:
         scored = predict_item(
             **item.model_dump(exclude={"inventory_id", "business_id"}), model=self.model, metadata=self.metadata
         )
@@ -52,7 +52,7 @@ class PredictionService:
             "predicted_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    def score_batch(self, business_id: str, inventory: list[InventoryItem]) -> list[dict[str, Any]]:
+    def score_batch(self, business_id: int, inventory: list[InventoryItem]) -> list[dict[str, Any]]:
         return [self.score_item(business_id, item) for item in inventory]
 
     def persist_predictions(self, predictions: list[dict[str, Any]]) -> None:
@@ -77,15 +77,15 @@ class PredictionService:
                     FROM inventory i JOIN product p ON p.product_id = i.product_id
                     WHERE i.expiry_date >= CURRENT_DATE AND i.quantity > 0""")
                 records = cursor.fetchall()
-        grouped: dict[str, list[InventoryItem]] = {}
+        grouped: dict[int, list[InventoryItem]] = {}
         now = datetime.now(timezone.utc)
         for record in records:
             category = record["category"] if record["category"] in MODEL_CATEGORIES else "Other"
             days_to_expiry = max(0, (record["expiry_date"] - now.date()).days)
-            item = InventoryItem(inventory_id=str(record["inventory_id"]), category=category,
+            item = InventoryItem(inventory_id=record["inventory_id"], category=category,
                 days_to_expiry=days_to_expiry, current_stock=float(record["quantity"]),
                 demand_forecast=0, storage_capacity=max(float(record["quantity"]), 100))
-            grouped.setdefault(str(record["business_id"]), []).append(item)
+            grouped.setdefault(record["business_id"], []).append(item)
         for business_id, inventory in grouped.items():
             self.persist_predictions(self.score_batch(business_id, inventory))
 

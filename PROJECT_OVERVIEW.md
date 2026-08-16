@@ -111,6 +111,7 @@ _Update this section as work progresses._
 - Added `server/database/005_ai_predictions.sql` for PostgreSQL-backed `PREDICTIONS` storage, including the inventory/business relationships, risk payloads, model version, timestamp, and lookup indexes.
 - Added a Node.js FastAPI client. New, updated, and CSV-imported inventory is scored immediately through `POST /predict/risk-score` and persisted after the inventory transaction commits. `AI_SERVICE_URL` and `AI_SERVICE_TIMEOUT_MS` are configurable environment variables.
 - Replaced the FastAPI JSON outbox and local active-inventory snapshot with PostgreSQL reads/writes. Both `POST /predict/batch` and APScheduler persist batch results; the existing `BATCH_PREDICTION_INTERVAL_SECONDS` environment variable controls the cadence.
+- Corrected the AI prediction ID contract so FastAPI, scheduled scoring, and the Node client preserve PostgreSQL `BIGINT` inventory and business identifiers as JSON integers during persistence.
 - Expiry alerts and business notifications now use each inventory item's latest AI risk tier/score. The business `alert_days` threshold remains exposed as a contextual signal. `GET /api/expiry-alerts` returns the data required by a dedicated expiry-alert UI, including item/business, days to expiry, risk, recommendation, and prediction timestamp.
 
 # Data Summary

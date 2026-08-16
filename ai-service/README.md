@@ -20,8 +20,8 @@ Every scored inventory item uses this contract for Node.js / PostgreSQL:
 
 ```json
 {
-  "inventory_id": "inv-123",
-  "business_id": "business-456",
+  "inventory_id": 123,
+  "business_id": 456,
   "risk_score": 82.14,
   "risk_tier": "high",
   "risk_probabilities": {"low": 0.02, "medium": 0.16, "high": 0.82},

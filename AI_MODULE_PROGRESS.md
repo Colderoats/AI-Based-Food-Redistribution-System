@@ -45,6 +45,7 @@ Next: Part 4 - FastAPI Microservice + Deployment
 - **Live integration:** Node.js calls FastAPI `POST /predict/risk-score` after inventory creation, quantity/expiry updates, and CSV imports, then persists each response. FastAPI `POST /predict/batch` and APScheduler now read/write PostgreSQL directly instead of using the JSON outbox and local snapshot.
 - **Alerting:** `GET /api/expiry-alerts`, existing inventory alerts, and business notifications are driven by the latest AI `risk_tier`/`risk_score`; `alert_days` is retained as an input/context signal. Alerts include days to expiry, AI recommendation, and prediction time for the forthcoming UI.
 - **Configuration and blocker update:** `BATCH_PREDICTION_INTERVAL_SECONDS` remains environment-configurable (default 3,600 seconds; 60-second minimum). The only current AI data-model limitation is the lack of explicit storage-capacity data; a conservative item-level default is used until it is modelled.
+- **ID contract correction:** `/predict/batch`, scheduled scoring, and the Node FastAPI client now preserve PostgreSQL `BIGINT` `inventory_id` and `business_id` values as JSON integers through prediction persistence; identifiers remain excluded from ML features.
 
 ## Part 6 - Frontend Integration
 
